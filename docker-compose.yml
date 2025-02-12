@@ -2,6 +2,7 @@ networks:
   kong-net:
 volumes:
   kong-datastore:
+  keycloak-datastore:
 services:
 
   kong-migration:
@@ -53,7 +54,7 @@ services:
   kong:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.5.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc
     container_name: kong
     depends_on:
       - kong-db
@@ -89,34 +90,39 @@ services:
       NODE_ENV: production
     restart: always
 
-  keycloak:
-    image: keycloak/keycloak:latest
-    container_name: keycloak
-    networks:
-      - kong-net
-    ports:
-      - "8080:8080"
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_DB: ${KC_DB}
-      KC_DB_URL: ${KC_DB_URL:-jdbc:postgresql://keycloak-db:5432/keycloak}
-      KC_DB_USERNAME: ${KC_DB_USERNAME:-keycloak}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-keycloak}
-    command:
-      - start-dev
-    depends_on:
-      - keycloak-db
-    restart: always
 
-  keycloak-db:
+  # Keycloak services
+  postgres:
     image: postgres:14.15-alpine3.21
-    container_name: keycloak-db
-    networks:
-      - kong-net
     volumes:
       - keycloak-datastore:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB_KC: ${POSTGRES_DB_KC:-keycloak}
-      POSTGRES_USER_KC: ${POSTGRES_USER_KC:-keycloak}
-      POSTGRES_PASSWORD_KC: ${POSTGRES_PASSWORD_KC:-keycloak}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - kong-net
+
+  keycloak:
+      image: keycloak/keycloak:latest
+      command: start
+      environment:
+        KC_HOSTNAME: localhost
+        KC_HOSTNAME_PORT: 8080
+        KC_HOSTNAME_STRICT_BACKCHANNEL: false
+        KC_HTTP_ENABLED: true
+        KC_HOSTNAME_STRICT_HTTPS: false
+        KC_HEALTH_ENABLED: true
+        KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+        KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+        KC_DB: postgres
+        KC_DB_URL: jdbc:postgresql://postgres/${POSTGRES_DB}
+        KC_DB_USERNAME: ${POSTGRES_USER}
+        KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      ports:
+        - 8080:8080
+      restart: always
+      depends_on:
+        - postgres
+      networks:
+        - kong-net
