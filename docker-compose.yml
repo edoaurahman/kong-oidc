@@ -7,7 +7,7 @@ services:
   kong-migration:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.5.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc
     command: kong migrations bootstrap
     networks:
       - kong-net
@@ -18,13 +18,13 @@ services:
       KONG_PG_HOST: kong-db
       KONG_PG_PORT: 5432
       KONG_PG_USER: ${KONG_PG_USER}
-      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-1234}
       KONG_PG_DATABASE: ${KONG_PG_DATABASE}
 
   kong-migration-up:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.5.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc
     command: kong migrations up && kong migrations finish
     networks:
       - kong-net
@@ -53,7 +53,7 @@ services:
   kong:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.5.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc
     container_name: kong
     depends_on:
       - kong-db
