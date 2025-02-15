@@ -3,6 +3,7 @@ networks:
 volumes:
   kong-datastore:
   keycloak-datastore:
+  redis-datastore:
 services:
 
   kong-migration:
@@ -58,6 +59,7 @@ services:
     container_name: kong
     depends_on:
       - kong-db
+      - kong-redis
     networks:
       - kong-net
     ports:
@@ -129,3 +131,11 @@ services:
       - keycloak-db
     networks:
       - kong-net
+  
+  kong-redis:
+    image: redis:alpine3.21
+    container_name: redis
+    networks:
+      - kong-net
+    volumes:
+      - redis-datastore:/data
