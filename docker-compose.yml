@@ -92,14 +92,14 @@ services:
 
 
   # Keycloak services
-  postgres:
+  keycloak-db:
     image: postgres:14.15-alpine3.21
     volumes:
       - keycloak-datastore:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${KC_POSTGRES_DB}
+      POSTGRES_USER: ${KC_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${KC_POSTGRES_PASSWORD}
     networks:
       - kong-net
 
@@ -116,11 +116,11 @@ services:
         KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
         KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
         KC_DB: postgres
-        KC_DB_URL: jdbc:postgresql://postgres/${POSTGRES_DB}
-        KC_DB_USERNAME: ${POSTGRES_USER}
-        KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+        KC_DB_URL: jdbc:postgresql://${KC_DB_URL:-keycloak-db}/${POSTGRES_DB}
+        KC_DB_USERNAME: ${KC_POSTGRES_USER}
+        KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
       ports:
-        - 8080:8080
+        - ${KC_PORT:-8080}:8080
       restart: always
       depends_on:
         - postgres
