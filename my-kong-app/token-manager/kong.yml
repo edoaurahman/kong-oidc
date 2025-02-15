@@ -1,0 +1,4 @@
+name: token-manager
+description: Plugin for managing tokens and automatic refresh tokens
+priority: 1000
+version: 1.0.0
