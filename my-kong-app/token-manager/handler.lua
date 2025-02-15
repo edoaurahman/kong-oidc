@@ -8,6 +8,23 @@ local TokenManagerPlugin = {
     VERSION = "0.1"
 }
 
+-- Add this helper function at the top with other helper functions
+local function parse_header_template(template, token)
+    -- Replace $access_token with actual token
+    local header_value = template:gsub("%$access_token", token)
+
+    -- Split into header name and value
+    local header_name, header_content = header_value:match("^([^:]+):%s*(.+)$")
+
+    if not header_name or not header_content then
+        kong.log.err("Invalid header template format: ", template)
+        return nil, nil
+    end
+
+    return header_name:gsub("^%s*(.-)%s*$", "%1"), -- trim whitespace
+    header_content:gsub("^%s*(.-)%s*$", "%1") -- trim whitespace
+end
+
 -- Fungsi untuk mendapatkan prefix service
 local function get_service_prefix()
     local service = kong.router.get_service()
@@ -177,20 +194,22 @@ function TokenManagerPlugin:access(conf)
         access_token = stored_access_token
     end
 
-    -- if shared_dict then
-    --     local stored_token = shared_dict:get("access_token")
-    --     if stored_token then
-    --         access_token = stored_token
-    --     end
-    -- end
     if not access_token or access_token == "" then
-        kong.log.err("Access token tidak tersedia!")
+        kong.log.err("Access token not available!")
         return kong.response.exit(401, {
-            message = "Access token tidak tersedia"
+            message = "Access token not available"
         })
     end
-    kong.log("Authorization header set with access token:", access_token)
-    kong.service.request.set_header("Authorization", "Bearer " .. access_token)
+    -- Parse and set the custom header
+    local header_name, header_value = parse_header_template(conf.header_authorization, access_token)
+    if not header_name then
+        kong.log.err("Failed to parse header template")
+        return kong.response.exit(500, {
+            message = "Invalid header configuration"
+        })
+    end
+    kong.log("Setting custom authorization header: ", header_name, " with value: ", header_value)
+    kong.service.request.set_header(header_name, header_value)
 end
 
 -- Fungsi utama pada response
@@ -214,25 +233,6 @@ function TokenManagerPlugin:response(conf)
         -- Store the new tokens in redis
         store_token_in_redis("access_token", new_token)
         store_token_in_redis("refresh_token", new_refresh_token)
-
-        -- Store the new tokens in shared dictionary
-        -- local shared_dict = ngx_shared.kong_token_store
-        -- if shared_dict then
-        --     local ok, err = shared_dict:set("access_token", new_token)
-        --     if not ok then
-        --         kong.log("Failed to store new token: ", err)
-        --     end
-
-        --     if new_refresh_token then
-        --         ok, err = shared_dict:set("refresh_token", new_refresh_token)
-        --         if not ok then
-        --             kong.log("Failed to store new refresh token: ", err)
-        --         end
-        --     end
-        -- end
-
-        -- kong.log("Stored new access token: ", shared_dict:get("access_token"))
-        -- kong.log("Stored new refresh token: ", shared_dict:get("refresh_token"))
 
         -- Retry the request with the new token
         local httpc = http.new()
