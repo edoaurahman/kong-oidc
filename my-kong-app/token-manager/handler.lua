@@ -40,7 +40,8 @@ local function store_token_in_redis(key, value)
 
     local service_prefix = get_service_prefix()
     local full_key = service_prefix .. key
-
+    kong.log("Storing token in Redis with key: ", full_key)
+    kong.log("Value: ", value)
     local ok, err = red:set(full_key, value)
     if not ok then
         kong.log.err("Failed to store token in Redis: ", err)
