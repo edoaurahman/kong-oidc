@@ -31,6 +31,8 @@ docker build -t my-kong-app:1.0 .
 ```bash
 docker-compose up -d
 ```
+## warning
+4. Ensure redis service is `kong-redis` or it will not work.
 
 ## Configuration
 
