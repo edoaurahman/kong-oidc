@@ -47,6 +47,27 @@ return {
                     description = "Content-Type untuk request refresh token",
                     one_of = {"application/json", "application/x-www-form-urlencoded"}
                 }
+            }, {
+                header_key = {
+                    type = "string",
+                    required = true,
+                    default = "Authorization",
+                    description = "Set header key untuk access token"
+                }
+            }, {
+                header_value = {
+                    type = "string",
+                    required = true,
+                    default = "Bearer $access_token",
+                    description = "Set value untuk header key"
+                }
+            }, {
+                ssl_verify = {
+                    type = "boolean",
+                    required = true,
+                    default = false,
+                    description = "Set SSL verify"
+                }
             }}
         }
     }}

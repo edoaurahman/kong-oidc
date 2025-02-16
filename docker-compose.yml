@@ -7,9 +7,9 @@ volumes:
 services:
 
   kong-migration:
-    build:
-      context: my-kong-app
-    # image: edoaurahman/kong:3.9.0-oidc
+    # build:
+    #   context: my-kong-app
+    image: edoaurahman/kong:3.9.0-oidc-v2
     command: kong migrations bootstrap
     networks:
       - kong-net
@@ -24,9 +24,9 @@ services:
       KONG_PG_DATABASE: ${KONG_PG_DATABASE}
 
   kong-migration-up:
-    build:
-      context: my-kong-app
-    # image: edoaurahman/kong:3.9.0-oidc
+    # build:
+    #   context: my-kong-app
+    image: edoaurahman/kong:3.9.0-oidc-v2
     command: kong migrations up && kong migrations finish
     networks:
       - kong-net
@@ -53,9 +53,9 @@ services:
       POSTGRES_DB: ${KONG_PG_DATABASE}
 
   kong:
-    build:
-      context: my-kong-app
-    # image: edoaurahman/kong:3.9.0-oidc
+    # build:
+    #   context: my-kong-app
+    image: edoaurahman/kong:3.9.0-oidc-v2
     container_name: kong
     depends_on:
       - kong-db
@@ -64,9 +64,9 @@ services:
       - kong-net
     ports:
       - "8000:8000" # Listener
-      - "8001:8001" # Admin API
-      - "8443:8443" # Listener  (SSL)
-      - "8444:8444" # Admin API (SSL)
+      # - "8001:8001" # Admin API
+      # - "8443:8443" # Listener  (SSL)
+      # - "8444:8444" # Admin API (SSL)
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-db
