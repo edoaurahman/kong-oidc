@@ -46,7 +46,7 @@ services:
     networks:
       - kong-net
     ports:
-      - "5432:5432"
+      # - "5432:5432"
     environment:
       POSTGRES_USER: ${KONG_PG_USER}
       POSTGRES_PASSWORD: ${KONG_PG_PASSWORD}
