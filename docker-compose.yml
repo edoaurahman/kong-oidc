@@ -3,12 +3,13 @@ networks:
 volumes:
   kong-datastore:
   keycloak-datastore:
+  redis-datastore:
 services:
 
   kong-migration:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.9.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc-v2
     command: kong migrations bootstrap
     networks:
       - kong-net
@@ -25,7 +26,7 @@ services:
   kong-migration-up:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.9.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc-v2
     command: kong migrations up && kong migrations finish
     networks:
       - kong-net
@@ -54,17 +55,18 @@ services:
   kong:
     # build:
     #   context: my-kong-app
-    image: edoaurahman/kong:3.9.0-oidc
+    image: edoaurahman/kong:3.9.0-oidc-v2
     container_name: kong
     depends_on:
       - kong-db
+      - kong-redis
     networks:
       - kong-net
     ports:
       - "8000:8000" # Listener
-      - "8001:8001" # Admin API
-      - "8443:8443" # Listener  (SSL)
-      - "8444:8444" # Admin API (SSL)
+      # - "8001:8001" # Admin API
+      # - "8443:8443" # Listener  (SSL)
+      # - "8444:8444" # Admin API (SSL)
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-db
@@ -90,9 +92,10 @@ services:
       NODE_ENV: production
     restart: always
 
-
   # Keycloak services
   keycloak-db:
+    profiles:
+      - keycloak
     image: postgres:14.15-alpine3.21
     volumes:
       - keycloak-datastore:/var/lib/postgresql/data
@@ -104,25 +107,35 @@ services:
       - kong-net
 
   keycloak:
-      image: keycloak/keycloak:latest
-      command: start
-      environment:
-        KC_HOSTNAME: localhost
-        KC_HOSTNAME_PORT: 8080
-        KC_HOSTNAME_STRICT_BACKCHANNEL: false
-        KC_HTTP_ENABLED: true
-        KC_HOSTNAME_STRICT_HTTPS: false
-        KC_HEALTH_ENABLED: true
-        KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-        KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-        KC_DB: postgres
-        KC_DB_URL: jdbc:postgresql://${KC_DB_URL:-keycloak-db}/${POSTGRES_DB}
-        KC_DB_USERNAME: ${KC_POSTGRES_USER}
-        KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
-      ports:
-        - ${KC_PORT:-8080}:8080
-      restart: always
-      depends_on:
-        - postgres
-      networks:
-        - kong-net
+    profiles:
+      - keycloak
+    image: keycloak/keycloak:latest
+    command: start
+    environment:
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://${KC_DB_URL:-keycloak-db}/${KC_POSTGRES_DB}
+      KC_DB_USERNAME: ${KC_POSTGRES_USER}
+      KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
+    ports:
+      - ${KC_PORT:-8080}:8080
+    restart: always
+    depends_on:
+      - keycloak-db
+    networks:
+      - kong-net
+  
+  kong-redis:
+    image: redis:alpine3.21
+    container_name: redis
+    networks:
+      - kong-net
+    volumes:
+      - redis-datastore:/data
