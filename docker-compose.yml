@@ -45,7 +45,7 @@ services:
       - kong-datastore:/var/lib/postgresql/data
     networks:
       - kong-net
-    ports:
+    # ports:
       # - "5432:5432"
     environment:
       POSTGRES_USER: ${KONG_PG_USER}
