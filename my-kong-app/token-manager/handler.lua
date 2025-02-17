@@ -31,6 +31,17 @@ local function connect_to_redis()
     return red
 end
 
+-- Fungsi untuk menutup koneksi Redis
+local function close_redis(red)
+    if not red then
+        return
+    end
+    local ok, err = red:set_keepalive(60000, 100)
+    if not ok then
+        kong.log.err("Failed to set Redis keepalive: ", err)
+    end
+end
+
 -- Fungsi untuk Menyimpan Token dengan Prefix
 local function store_token_in_redis(key, value)
     local red = connect_to_redis()
@@ -47,6 +58,7 @@ local function store_token_in_redis(key, value)
         kong.log.err("Failed to store token in Redis: ", err)
         return
     end
+    close_redis(red)
 end
 
 -- Fungsi untuk Mengambil Token dari Redis
@@ -72,6 +84,7 @@ local function get_token_from_redis(key)
     end
 
     -- Convert response to string to ensure proper type
+    close_redis(red)
     return tostring(res)
 end
 
@@ -121,6 +134,9 @@ end
 
 -- Fungsi untuk melakukan refresh token
 local function refresh_token(conf, use_stored_token)
+    -- delete all Tokens
+    store_token_in_redis("access_token", nil)
+    store_token_in_redis("refresh_token", nil)
     local httpc = http.new()
     local headers = {
         ["Content-Type"] = conf.content_type
@@ -188,13 +204,16 @@ local function refresh_token(conf, use_stored_token)
         kong.log.err("Failed to get new token from response")
         return conf.access_token, conf.refresh_token, "Failed to get new token from response"
     end
+    kong.log("Save token from response")
     store_token_in_redis("access_token", new_token)
+    kong.log("Access token saved, ", new_token)
     store_token_in_redis("refresh_token", new_refresh_token)
+    kong.log("Refresh token saved, ", new_refresh_token)
     return new_token, new_refresh_token, nil
 end
 
 local function is_refresh_endpoint(conf)
-    local refresh_path = kong.router.get_route().paths[1]  -- Ambil path dari route
+    local refresh_path = kong.router.get_route().paths[1] -- Ambil path dari route
     local request_path = kong.request.get_path()
     return request_path:match(refresh_path .. "/?$")
 end
@@ -210,7 +229,7 @@ function TokenManagerPlugin:access(conf)
     local stored_access_token = get_token_from_redis("access_token")
     local access_token = conf.access_token
 
-    if stored_access_token then
+    if stored_access_token and stored_access_token ~= ngx.null then
         access_token = stored_access_token
     end
 
@@ -220,6 +239,7 @@ function TokenManagerPlugin:access(conf)
             message = "Access not available"
         })
     end
+
     kong.log("Authorization header set with access token:", access_token)
     local token_value = conf.header_value
     token_value = substitute_token(token_value, access_token, "$access_token")
@@ -228,96 +248,84 @@ end
 
 -- Fungsi utama pada response
 function TokenManagerPlugin:response(conf)
-    -- Skip token refresh for refresh endpoint
     if is_refresh_endpoint(conf) then
         kong.log.debug("Skipping token refresh for refresh endpoint")
         return
     end
+
     kong.log("Response phase started")
     local status = kong.response.get_status()
 
-    -- Periksa apakah status 401 (Token Expired)
-    -- Periksa X-Retry-Count untuk mencegah loop
-    local retry_count = kong.request.get_header("X-Retry-Count") or "0"
-    retry_count = tonumber(retry_count)
-    if retry_count and retry_count > 3 then
-        kong.log("Retry count exceeded, preventing loop")
-        return kong.response.exit(429, {
-            message = "Max retry attempts reached, please re-authenticate or contact support"
-        })
-    end
+    -- Batas maksimal retry
+    local max_retries = 2  -- Sesuaikan dengan kebutuhan
+    local retry_count = 0  -- Variabel untuk melacak jumlah retry
 
-    if status == 401 then
-        kong.log("Token expired, attempting to refresh...")
+    -- Fungsi untuk melakukan retry request
+    local function retry_request()
+        retry_count = retry_count + 1
+        if retry_count > max_retries then
+            kong.log.err("Max retry attempts reached")
+            return kong.response.exit(500, {
+                message = "Max retry attempts reached, please contact support"
+            })
+        end
 
-        -- Refresh token
+        kong.log("Token expired, attempting to refresh... (Retry attempt: " .. retry_count .. ")")
+
+        -- 1. Refresh Token
         local new_token, new_refresh_token, err = refresh_token(conf, true)
-
         if not new_token or not new_refresh_token then
             store_token_in_redis("access_token", nil)
             store_token_in_redis("refresh_token", nil)
             new_token, new_refresh_token, err = refresh_token(conf, false)
         end
 
-        kong.log("New access token: ", new_token)
-
         if not new_token then
-            kong.log("Failed to refresh token: ", err)
+            kong.log.err("Failed to refresh token: ", err)
             return kong.response.exit(500, {
                 message = "Failed to refresh token, please re-authenticate or contact support"
             })
         end
 
-        -- Retry the request with the new token
+        -- 2. Update Headers dengan Token Baru
+        local request_headers = kong.request.get_headers()
+        request_headers[conf.header_key] = substitute_token(conf.header_value, new_token, "$access_token")
+        request_headers["Authorization"] = nil  -- Hapus header lama (jika ada)
+
+        -- 3. Lakukan Request Ulang ke Upstream
         local httpc = http.new()
-        local upstream_scheme = kong.request.get_scheme()
-        local upstream_host = kong.request.get_host()
-        local upstream_port = kong.request.get_port()
-        local upstream_path = kong.request.get_path()
-        local upstream_query = kong.request.get_raw_query()
+        local upstream_url = kong.request.get_scheme() .. "://" .. kong.request.get_host() .. kong.request.get_path()
+        local request_method = kong.request.get_method()
+        local request_body = kong.request.get_raw_body()
 
-        local token = conf.header_value
-        token = substitute_token(token, new_token, "$access_token")
-        kong.log("Authorization header set with new access token:", token)
-
-        -- Construct full URL
-        local upstream_url = string.format("%s://%s:%d%s", upstream_scheme, upstream_host, upstream_port, upstream_path)
-        if upstream_query and upstream_query ~= "" then
-            upstream_url = upstream_url .. "?" .. upstream_query
-        end
-
-        kong.log("Retrying request to: ", upstream_url)
-
-        -- Tambahkan X-Retry-Count pada header dengan increment +1
-        local new_retry_count = retry_count + 1
-        kong.log("New retry count: ", new_retry_count)
-
-        kong.log("Header Key", conf.header_key)
+        kong.log("Retrying request to upstream URL: ", upstream_url)
         local res, err = httpc:request_uri(upstream_url, {
-            method = kong.request.get_method(),
-            headers = {
-                ["X-Retry-Count"] = tostring(new_retry_count),
-                [conf.header_key] = token,
-                ["Host"] = upstream_host,
-            },
-            body = kong.request.get_raw_body(),
+            method = request_method,
+            body = request_body,
+            headers = request_headers,
             ssl_verify = conf.ssl_verify
         })
-        kong.log("Response from retry: ", res.status)
-        kong.log("Response body from retry: ", res.body)
-        kong.log("Response headers from retry: ", res.headers)
-        kong.log("Response err from retry: ", err)
+
         if not res then
-            kong.log("Failed to retry request: ", err)
+            kong.log.err("Failed to retry request: ", err)
             return kong.response.exit(500, {
-                header = {
-                    ["Content-Type"] = "application/json",
-                },
-                message = "Failed to retry request",
+                message = "Failed to retry request, please contact support"
             })
         end
 
-        return kong.response.exit(res.status, res.body, res.headers)
+        -- 4. Periksa kembali status respons
+        if res.status == 401 then
+            -- Jika masih 401, lakukan retry lagi
+            return retry_request()
+        else
+            -- Jika berhasil, kirim respons ke klien
+            return kong.response.exit(res.status, res.body, res.headers)
+        end
+    end
+
+    -- Mulai proses retry jika status 401
+    if status == 401 then
+        return retry_request()
     end
 end
 
