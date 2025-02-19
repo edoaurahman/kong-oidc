@@ -10,4 +10,5 @@ USER kong
 WORKDIR /usr/local/share/lua/5.1/kong/plugins
 COPY ./keycloak-introspection ./keycloak-introspection
 COPY ./token-manager ./token-manager
+COPY ./data-masking ./data-masking
 COPY ./kong.conf /etc/kong/kong.conf
