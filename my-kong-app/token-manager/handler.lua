@@ -42,6 +42,31 @@ local function close_redis(red)
     end
 end
 
+local function clear_redis_tokens()
+    local red = connect_to_redis()
+    if not red then
+        kong.log.err("Failed to connect to Redis while clearing tokens")
+        return false
+    end
+
+    local service_prefix = get_service_prefix()
+    local keys = {service_prefix .. "access_token", service_prefix .. "refresh_token"}
+
+    -- Delete each key
+    for _, key in ipairs(keys) do
+        local ok, err = red:del(key)
+        if not ok then
+            kong.log.err("Failed to delete key from Redis: ", key, " error: ", err)
+            close_redis(red)
+            return false
+        end
+        kong.log.debug("Successfully cleared Redis key: ", key)
+    end
+
+    close_redis(red)
+    return true
+end
+
 -- Fungsi untuk Menyimpan Token dengan Prefix
 local function store_token_in_redis(key, value)
     local red = connect_to_redis()
@@ -134,9 +159,6 @@ end
 
 -- Fungsi untuk melakukan refresh token
 local function refresh_token(conf, use_stored_token)
-    -- delete all Tokens
-    store_token_in_redis("access_token", nil)
-    store_token_in_redis("refresh_token", nil)
     local httpc = http.new()
     local headers = {
         ["Content-Type"] = conf.content_type
@@ -164,7 +186,24 @@ local function refresh_token(conf, use_stored_token)
             return nil, nil, "Failed to encode JSON body"
         end
     elseif conf.content_type == "application/x-www-form-urlencoded" then
-        body = ngx.encode_args(conf.refresh_body)
+        kong.log("application/x-www-form-urlencoded content : ", conf.refresh_body)
+        -- Convert string to table if it's a string
+        local body_table
+        if type(conf.refresh_body) == "string" then
+            body_table = {}
+            for key, value in conf.refresh_body:gmatch("([^&=]+)=([^&=]+)") do
+                body_table[key] = value
+            end
+            -- Replace refresh token placeholder if exists
+            if body_table.refresh_token == "$refresh_token" then
+                body_table.refresh_token = refresh_token
+            end
+        else
+            body_table = conf.refresh_body
+        end
+
+        body = ngx.encode_args(body_table)
+        kong.log("Encoded body: ", body)
     end
 
     local res, err = httpc:request_uri(conf.refresh_endpoint, {
@@ -173,42 +212,40 @@ local function refresh_token(conf, use_stored_token)
         headers = headers,
         ssl_verify = conf.ssl_verify
     })
+
+    kong.log("Res body :", res.body)
+
     if res.status ~= 200 then
         kong.log("Failed to refresh token: ", err)
         -- delete the stored tokens
-        store_token_in_redis("access_token", nil)
-        store_token_in_redis("refresh_token", nil)
+        clear_redis_tokens()
         return nil, nil, err
     end
 
     local new_token
     local new_refresh_token
-    if conf.content_type == "application/json" then
-        local parsed_body, err = cjson.decode(res.body)
-        if not parsed_body then
-            kong.log.err("Failed to decode JSON response body: ", err)
-            return nil, nil, "Failed to decode JSON response body"
-        end
-        new_token = parsed_body.access_token
-        new_refresh_token = parsed_body.refresh_token
-    elseif conf.content_type == "application/x-www-form-urlencoded" then
-        local args = ngx.decode_args(res.body)
-        new_token = args.access_token
-        new_refresh_token = args.refresh_token
+    local parsed_body, err = cjson.decode(res.body)
+    if not parsed_body then
+        kong.log.err("Failed to decode JSON response body: ", err)
+        return nil, nil, "Failed to decode JSON response body"
     end
+    new_token = parsed_body.access_token
+    new_refresh_token = parsed_body.refresh_token
 
     -- handle if new token is not present
     if not new_token then
-        store_token_in_redis("access_token", nil)
-        store_token_in_redis("refresh_token", nil)
         kong.log.err("Failed to get new token from response")
         return conf.access_token, conf.refresh_token, "Failed to get new token from response"
     end
     kong.log("Save token from response")
-    store_token_in_redis("access_token", new_token)
-    kong.log("Access token saved, ", new_token)
-    store_token_in_redis("refresh_token", new_refresh_token)
-    kong.log("Refresh token saved, ", new_refresh_token)
+    if new_token then
+        store_token_in_redis("access_token", new_token)
+        kong.log("Access token saved, ", new_token)
+    end
+    if new_refresh_token then
+        store_token_in_redis("refresh_token", new_refresh_token)
+        kong.log("Refresh token saved, ", new_refresh_token)
+    end
     return new_token, new_refresh_token, nil
 end
 
@@ -220,6 +257,15 @@ end
 
 -- Fungsi utama pada request
 function TokenManagerPlugin:access(conf)
+    -- if header Clear-Redis-Token is set, clear the stored tokens
+    if kong.request.get_header("Clear-Redis-Token") == "clear" then
+        kong.log("Clearing stored tokens")
+        if clear_redis_tokens() then
+            kong.log("Successfully cleared all tokens from Redis")
+        else
+            kong.log.err("Failed to clear tokens from Redis")
+        end
+    end
     -- Skip token management for refresh endpoint
     if is_refresh_endpoint(conf) then
         kong.log.debug("Skipping token management for refresh endpoint")
@@ -246,6 +292,8 @@ function TokenManagerPlugin:access(conf)
     kong.service.request.set_header(conf.header_key, token_value)
 end
 
+local retry_attempts = {}
+
 -- Fungsi utama pada response
 function TokenManagerPlugin:response(conf)
     if is_refresh_endpoint(conf) then
@@ -257,8 +305,8 @@ function TokenManagerPlugin:response(conf)
     local status = kong.response.get_status()
 
     -- Batas maksimal retry
-    local max_retries = 2  -- Sesuaikan dengan kebutuhan
-    local retry_count = 0  -- Variabel untuk melacak jumlah retry
+    local max_retries = 2 -- Sesuaikan dengan kebutuhan
+    local retry_count = 0 -- Variabel untuk melacak jumlah retry
 
     -- Fungsi untuk melakukan retry request
     local function retry_request()
@@ -274,9 +322,7 @@ function TokenManagerPlugin:response(conf)
 
         -- 1. Refresh Token
         local new_token, new_refresh_token, err = refresh_token(conf, true)
-        if not new_token or not new_refresh_token then
-            store_token_in_redis("access_token", nil)
-            store_token_in_redis("refresh_token", nil)
+        if not new_token then
             new_token, new_refresh_token, err = refresh_token(conf, false)
         end
 
@@ -289,14 +335,21 @@ function TokenManagerPlugin:response(conf)
 
         -- 2. Update Headers dengan Token Baru
         local request_headers = kong.request.get_headers()
+        request_headers["Clear-Redis-Token"] = "false" -- Hapus header lama (jika ada)
+        request_headers["Authorization"] = nil -- Hapus header lama (jika ada)
         request_headers[conf.header_key] = substitute_token(conf.header_value, new_token, "$access_token")
-        request_headers["Authorization"] = nil  -- Hapus header lama (jika ada)
 
         -- 3. Lakukan Request Ulang ke Upstream
         local httpc = http.new()
         local upstream_url = kong.request.get_scheme() .. "://" .. kong.request.get_host() .. kong.request.get_path()
         local request_method = kong.request.get_method()
         local request_body = kong.request.get_raw_body()
+
+        -- 4. Tambahkan query_params jika ada
+        local query_params = kong.request.get_raw_query()
+        if query_params and query_params ~= "" then
+            upstream_url = upstream_url .. "?" .. query_params
+        end
 
         kong.log("Retrying request to upstream URL: ", upstream_url)
         local res, err = httpc:request_uri(upstream_url, {

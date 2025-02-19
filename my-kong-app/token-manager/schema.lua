@@ -18,7 +18,7 @@ return {
             }, {
                 refresh_token = {
                     type = "string",
-                    required = true,
+                    required = false,
                     description = "Refresh token untuk memperbarui access token"
                 }
             }, {
