@@ -8,6 +8,7 @@ RUN luarocks install lua-resty-redis
 USER kong
 # RUN sed -i '/lua_shared_dict kong_secrets                5m;/a \lua_shared_dict kong_token_store            10m;' /usr/local/share/lua/5.1/kong/templates/nginx_kong.lua
 WORKDIR /usr/local/share/lua/5.1/kong/plugins
+COPY ./data-masking ./data-masking
 COPY ./keycloak-introspection ./keycloak-introspection
 COPY ./token-manager ./token-manager
 COPY ./data-masking ./data-masking

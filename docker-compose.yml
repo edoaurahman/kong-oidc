@@ -7,8 +7,8 @@ volumes:
 services:
 
   kong-migration:
-    profiles:
-        - migration
+    # profiles:
+    #     - migration
     build:
       context: my-kong-app
     # image: edoaurahman/kong:3.9.0-oidc-v2
@@ -28,8 +28,8 @@ services:
   kong-migration-up:
     build:
       context: my-kong-app
-    profiles:
-      - migration
+    # profiles:
+    #   - migration
     # image: edoaurahman/kong:3.9.0-oidc-v2
     command: kong migrations up && kong migrations finish
     networks:

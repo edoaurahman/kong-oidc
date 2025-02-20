@@ -44,9 +44,6 @@ function KeycloakIntrospectionHandler:access(config)
     ngx.log(ngx.NOTICE, "body ", cjson.encode(request_options))
     ngx.log(ngx.NOTICE, "Plugin Configuration :", cjson.encode(config))
 
-    
-    
-
     if not res then
         ngx.log(ngx.ERR, "Failed to introspect token: ", err)
         return ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
