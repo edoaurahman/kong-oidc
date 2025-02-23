@@ -115,9 +115,9 @@ end
 
 -- Fungsi untuk melakukan substitusi anotasi
 local function substitute_token(header_value, new_token, placeholder)
-    kong.log("Original header_value type: ", type(header_value))
-    kong.log("Placeholder to replace: ", placeholder)
-    kong.log("New token: ", new_token)
+    -- kong.log("Original header_value type: ", type(header_value))
+    -- kong.log("Placeholder to replace: ", placeholder)
+    -- kong.log("New token: ", new_token)
 
     -- Handle table (JSON) values
     if type(header_value) == "table" then
