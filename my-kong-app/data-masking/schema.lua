@@ -1,32 +1,25 @@
--- schema.lua
 local typedefs = require "kong.db.schema.typedefs"
 
-local PLUGIN_NAME = "data-masking"
+local plugin_name = "data-masking"
+
+--TODO: Add validation
+local string_array = {
+  type = "array",
+  default = {},
+  required = true,
+  elements = { type = "string" },
+}
 
 return {
-  name = PLUGIN_NAME,
+  name = plugin_name,
   fields = {
     { consumer = typedefs.no_consumer },
     { protocols = typedefs.protocols_http },
     { config = {
         type = "record",
         fields = {
-          {
-            field_names = {
-              type = "string",
-              required = true,
-              default = "nikSap,name",
-              description = "Comma-separated field names to mask (supports nested fields with dot notation, e.g.: data.nik)"
-            }
-          },
-          {
-            mask_chars = {
-              type = "string",
-              required = true,
-              default = "x,x",
-              description = "Comma-separated mask characters for each field"
-            }
-          },
+          { Field_to_Mask = string_array },
+          { Masking_Chars = string_array },
           {
             expose_chars = {
               type = "string",
@@ -44,6 +37,7 @@ return {
             }
           }
         }
-    }}
+      }
+    }
   }
 }
