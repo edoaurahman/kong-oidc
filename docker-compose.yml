@@ -98,8 +98,8 @@ services:
 
   # Keycloak services
   keycloak-db:
-    profiles:
-      - keycloak
+    # profiles:
+    #   - keycloak
     image: postgres:14.15-alpine3.21
     volumes:
       - keycloak-datastore:/var/lib/postgresql/data
@@ -111,8 +111,8 @@ services:
       - kong-net
 
   keycloak:
-    profiles:
-      - keycloak
+    # profiles:
+    #   - keycloak
     image: keycloak/keycloak:latest
     command: start
     environment:
@@ -135,6 +135,8 @@ services:
       - keycloak-db
     networks:
       - kong-net
+    volumes:
+      - ./keycloak-themes:/opt/keycloak/providers/
   
   kong-redis:
     image: redis:alpine3.21
