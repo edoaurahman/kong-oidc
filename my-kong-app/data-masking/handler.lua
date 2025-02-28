@@ -69,15 +69,16 @@ local function mask_value(value, mask_char, expose_chars, pattern)
   value = tostring(value)
   
   -- Validasi pola jika disediakan
-  if pattern ~= "" and not string.match(value, pattern) then
-    kong.log.debug("Value doesn't match pattern, skipping mask: ", value)
-    return value
-  end
+  -- if pattern and pattern ~= "" and not string.match(value, pattern) then
+  --   kong.log("Ini coba log:", pattern)
+  --   kong.log("Value doesn't match pattern, skipping mask: ", value)
+  --   return value
+  -- end
 
   -- Jika value berupa angka (hanya digit dengan spasi opsional), mask penuh tanpa expose
-  if string.match(value, "^%s*%d+%s*$") then
-    return string.rep(mask_char, #value)
-  end
+  -- if string.match(value, "^%s*%d+%s*$") then
+  --   return string.rep(mask_char, #value)
+  -- end
 
   if expose_chars > 0 and expose_chars < #value then
     exposed = string.sub(value, 1, expose_chars)
@@ -138,7 +139,7 @@ function DataMaskingHandler:body_filter(conf)
   }))
 
   local function process_object(obj)
-    for i in #Field_to_Mask do
+    for i = 1, #Field_to_Mask do
       -- Remove whitespaces
       Field_to_Mask[i] = Field_to_Mask[i]:match("^%s*(.-)%s*$")
 
@@ -160,7 +161,7 @@ function DataMaskingHandler:body_filter(conf)
               element,
               Masking_Chars[i],
               expose_chars[i],
-              patterns
+              patterns[i]
             )
           else
             masked_value[idx] = element
@@ -171,7 +172,7 @@ function DataMaskingHandler:body_filter(conf)
           original_value,
           Masking_Chars[i],
           expose_chars[i],
-          patterns
+          patterns[i]
         )
       end
 
