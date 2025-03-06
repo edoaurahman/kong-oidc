@@ -43,7 +43,7 @@ public class CustomEventListenerProvider implements EventListenerProvider {
             UserModel user = this.session.users().getUserById(realm, event.getUserId());
             if (user != null) {
                 log.infof("User found: %s", user.getUsername());
-                sendUserData(user);
+                sendUserData(user, realm.getName(), event.getClientId());
             } else {
                 log.warnf("User not found for ID: %s", event.getUserId());
             }
@@ -55,7 +55,7 @@ public class CustomEventListenerProvider implements EventListenerProvider {
             UserModel user = this.session.users().getUserById(realm, event.getUserId());
             if (user != null) {
                 log.infof("User found: %s", user.getUsername());
-                sendUserData(user);
+                sendUserData(user, realm.getName(), event.getClientId());
             } else {
                 log.warnf("User not found for ID: %s", event.getUserId());
             }
@@ -81,7 +81,7 @@ public class CustomEventListenerProvider implements EventListenerProvider {
             UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
             if (user != null) {
                 log.infof("User created: %s", user.getUsername());
-                sendUserData(user);
+                sendUserData(user, realm.getName(), adminEvent.getAuthDetails().getClientId());
             } else {
                 log.warnf("User not found for path: %s", adminEvent.getResourcePath());
             }
@@ -92,26 +92,28 @@ public class CustomEventListenerProvider implements EventListenerProvider {
             UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
             if (user != null) {
                 log.infof("User updated: %s", user.getUsername());
-                sendUserData(user);
+                sendUserData(user, realm.getName(), adminEvent.getAuthDetails().getClientId());
             } else {
                 log.warnf("User not found for path: %s", adminEvent.getResourcePath());
             }
         }
     }
 
-    private void sendUserData(UserModel user) {
+    private void sendUserData(UserModel user, String realmName, String clientId) {
         String data = """
                 {
                     "id": "%s",
                     "email": "%s",
                     "userName": "%s",
                     "firstName": "%s",
-                    "lastName": "%s"
+                    "lastName": "%s",
+                    "realm": "%s",
+                    "client": "%s"
                 }
-                """.formatted(user.getId(), user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName());
+                """.formatted(user.getId(), user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), realmName, clientId);
         try {
             Client.postService(data);
-            log.debug("A new user has been created and post API");
+            log.debug("A new user has been created and posted to API");
         } catch (Exception e) {
             log.errorf("Failed to call API: %s", e);
         }
