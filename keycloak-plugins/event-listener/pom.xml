@@ -10,7 +10,7 @@
         <version>26.0.4</version>
     </parent>
 
-    <groupId>com.cevher.keycloak</groupId>
+    <groupId>com.edoaurahman.keycloak</groupId>
     <artifactId>custom-event-listener</artifactId>
     <version>26.0.4</version>
     <packaging>jar</packaging>

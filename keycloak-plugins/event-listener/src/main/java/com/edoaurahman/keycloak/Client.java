@@ -1,4 +1,4 @@
-package com.cevher.keycloak;
+package com.edoaurahman.keycloak;
 
 import org.jboss.logging.Logger;
 

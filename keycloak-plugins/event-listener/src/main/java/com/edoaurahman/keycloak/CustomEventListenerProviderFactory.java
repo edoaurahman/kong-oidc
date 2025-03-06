@@ -1,4 +1,4 @@
-package com.cevher.keycloak;
+package com.edoaurahman.keycloak;
 
 import org.keycloak.Config;
 import org.keycloak.events.EventListenerProvider;

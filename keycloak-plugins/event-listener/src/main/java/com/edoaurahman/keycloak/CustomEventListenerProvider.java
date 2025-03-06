@@ -1,4 +1,4 @@
-package com.cevher.keycloak;
+package com.edoaurahman.keycloak;
 
 import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
@@ -14,8 +14,7 @@ import org.keycloak.models.UserModel;
 
 import java.util.StringJoiner;
 
-public class CustomEventListenerProvider
-        implements EventListenerProvider {
+public class CustomEventListenerProvider implements EventListenerProvider {
 
     private static final Logger log = Logger.getLogger(CustomEventListenerProvider.class);
 
@@ -29,19 +28,38 @@ public class CustomEventListenerProvider
 
     @Override
     public void onEvent(Event event) {
-
         log.debugf("New %s Event", event.getType());
         log.debugf("onEvent-> %s", toString(event));
 
-        if (EventType.REGISTER.equals(event.getType())) {
+        RealmModel realm = this.model.getRealm(event.getRealmId());
+        log.debugf("Realm: %s", realm.getName());
+        log.debugf("Client: %s", event.getClientId());
+
+        if (EventType.REGISTER.equals(event.getType())) { // Log Register Event
+            log.info("Handling REGISTER event");
 
             event.getDetails().forEach((key, value) -> log.debugf("%s : %s", key, value));
 
-            RealmModel realm = this.model.getRealm(event.getRealmId());
             UserModel user = this.session.users().getUserById(realm, event.getUserId());
-            sendUserData(user);
-        }
+            if (user != null) {
+                log.infof("User found: %s", user.getUsername());
+                sendUserData(user);
+            } else {
+                log.warnf("User not found for ID: %s", event.getUserId());
+            }
+        } else if (EventType.LOGIN.equals(event.getType())) { // Log Login Event
+            log.info("Handling LOGIN event");
 
+            event.getDetails().forEach((key, value) -> log.debugf("%s : %s", key, value));
+
+            UserModel user = this.session.users().getUserById(realm, event.getUserId());
+            if (user != null) {
+                log.infof("User found: %s", user.getUsername());
+                sendUserData(user);
+            } else {
+                log.warnf("User not found for ID: %s", event.getUserId());
+            }
+        }
     }
 
     @Override
@@ -51,12 +69,33 @@ public class CustomEventListenerProvider
         log.debugf("Resource type: %s", adminEvent.getResourceType());
         log.debugf("Operation type: %s", adminEvent.getOperationType());
         log.debugf("AdminEvent.toString(): %s", toString(adminEvent));
+
+        RealmModel realm = this.model.getRealm(adminEvent.getRealmId());
+        log.debugf("Realm: %s", realm.getName());
+        log.debugf("Client: %s", adminEvent.getAuthDetails().getClientId());
+
         if (ResourceType.USER.equals(adminEvent.getResourceType())
                 && OperationType.CREATE.equals(adminEvent.getOperationType())) {
-            RealmModel realm = this.model.getRealm(adminEvent.getRealmId());
-            UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
+            log.info("Handling USER CREATE admin event");
 
-            sendUserData(user);
+            UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
+            if (user != null) {
+                log.infof("User created: %s", user.getUsername());
+                sendUserData(user);
+            } else {
+                log.warnf("User not found for path: %s", adminEvent.getResourcePath());
+            }
+        } else if (ResourceType.USER.equals(adminEvent.getResourceType())
+                && OperationType.UPDATE.equals(adminEvent.getOperationType())) {
+            log.info("Handling USER UPDATE admin event");
+
+            UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
+            if (user != null) {
+                log.infof("User updated: %s", user.getUsername());
+                sendUserData(user);
+            } else {
+                log.warnf("User not found for path: %s", adminEvent.getResourcePath());
+            }
         }
     }
 
@@ -80,6 +119,7 @@ public class CustomEventListenerProvider
 
     @Override
     public void close() {
+        log.debug("Closing CustomEventListenerProvider");
     }
 
     private String toString(Event event) {
@@ -135,5 +175,4 @@ public class CustomEventListenerProvider
 
         return joiner.toString();
     }
-
 }
