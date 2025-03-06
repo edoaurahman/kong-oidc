@@ -138,7 +138,6 @@ services:
       - kong-net
     volumes:
       - ./keycloak-providers:/opt/keycloak/providers/
-      - ./keycloak-plugins/event-listener/providers:/opt/keycloak/providers/
   
   kong-redis:
     image: redis:alpine3.21
