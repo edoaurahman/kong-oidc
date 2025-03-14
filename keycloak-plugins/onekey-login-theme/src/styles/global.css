@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 45 100% 98%;
+    --foreground: 156 56% 20%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 156 56% 20%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 156 56% 20%;
+    
+    --primary: 40 100% 48%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 156 56% 25%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 40 30% 96%;
+    --muted-foreground: 156 20% 40%;
+    
+    --accent: 40 80% 60%;
+    --accent-foreground: 156 56% 20%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 40 30% 90%;
+    --input: 40 30% 90%;
+    --ring: 40 100% 48%;
+    
+    --radius: 0.75rem;
+    
+    --chart-1: 40 100% 48%;
+    --chart-2: 156 56% 25%;
+    --chart-3: 40 80% 60%;
+    --chart-4: 156 40% 40%;
+    --chart-5: 40 60% 70%;
+    
+    --font-sans: 'Poppins', system-ui, sans-serif;
+  }
+  
+  .dark {
+    --background: 156 30% 10%;
+    --foreground: 40 30% 90%;
+    
+    --card: 156 30% 15%;
+    --card-foreground: 40 30% 90%;
+    
+    --popover: 156 30% 15%;
+    --popover-foreground: 40 30% 90%;
+    
+    --primary: 40 90% 55%;
+    --primary-foreground: 156 30% 10%;
+    
+    --secondary: 156 50% 30%;
+    --secondary-foreground: 40 30% 90%;
+    
+    --muted: 156 20% 20%;
+    --muted-foreground: 40 20% 70%;
+    
+    --accent: 156 30% 25%;
+    --accent-foreground: 40 30% 90%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 156 20% 25%;
+    --input: 156 20% 25%;
+    --ring: 40 90% 55%;
+    
+    --chart-1: 40 90% 55%;
+    --chart-2: 156 50% 30%;
+    --chart-3: 40 70% 65%;
+    --chart-4: 156 40% 45%;
+    --chart-5: 40 60% 75%;
+  }
+  
+  body {
+    font-family: var(--font-sans);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/40 dark:bg-secondary-900/40 backdrop-blur-md border border-white/30 dark:border-secondary-800/30 shadow-lg;
+  }
+  
+  .glass-card-dark {
+    @apply bg-secondary-900/40 backdrop-blur-md border border-secondary-800/30 shadow-lg;
+  }
+  
+  .glass-input {
+    @apply bg-white/60 dark:bg-secondary-900/60 backdrop-blur-sm border border-white/50 dark:border-secondary-800/50 focus:border-primary-400 dark:focus:border-primary-400 focus:ring-2 focus:ring-primary-400/30 dark:focus:ring-primary-400/30;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-medium px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700 text-white font-medium px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-200;
+  }
+  
+  .btn-outline {
+    @apply border border-primary-500 dark:border-primary-400 text-primary-600 dark:text-primary-400 hover:bg-primary-500/10 dark:hover:bg-primary-400/10 font-medium px-4 py-2 rounded-md transition-all duration-200;
+  }
+  
+  .link-style {
+    @apply text-secondary-600 dark:text-secondary-400 hover:text-secondary-700 dark:hover:text-secondary-300 underline underline-offset-4 font-medium transition-colors duration-200;
+  }
+  
+  .input-error {
+    @apply text-sm mt-1 text-destructive font-medium py-0.5 px-1;
+  }
+  
+  .split-login-card {
+    @apply flex flex-col md:flex-row overflow-hidden rounded-xl shadow-2xl;
+  }
+  
+  .split-login-image {
+    @apply hidden md:block w-full md:w-1/2 bg-gradient-to-br from-primary-400 to-secondary-600 p-8 relative overflow-hidden;
+  }
+  
+  .split-login-form {
+    @apply w-full md:w-1/2 bg-white dark:bg-secondary-900 p-8;
+  }
+  
+  .typography-heading {
+    @apply font-heading font-bold text-secondary-700 dark:text-primary-400;
+  }
+}
+
+input[type="checkbox"], input[type="radio"] {
+  @apply text-primary-500 focus:ring-primary-400 focus:ring-offset-0 cursor-pointer;
+  margin: 0;
+  vertical-align: middle;
+  line-height: normal;
+}
+
+.responsive-container {
+  @apply flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 items-center;
+}
