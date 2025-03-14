@@ -1,3 +1,4 @@
+--handler.lua
 local cjson = require "cjson"
 
 local DataMaskingHandler = {
