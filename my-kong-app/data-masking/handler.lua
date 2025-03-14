@@ -2,7 +2,7 @@
 local cjson = require "cjson"
 
 local DataMaskingHandler = {
-  VERSION = "1.0.0",
+  VERSION = "1.1.0",
   PRIORITY = 800,
 }
 
@@ -11,7 +11,9 @@ local function split(str, sep)
   if not str then
     return {}
   end
+
   local fields = {}
+
   -- Jika separator adalah titik, escape dengan benar
   local escape_sep = (sep == ".") and "%." or sep
   local pattern = string.format("([^%s]+)", escape_sep)
@@ -54,6 +56,13 @@ end
 
 -- Fungsi untuk melakukan masking pada nilai
 local function mask_value(value, mask_char, expose_chars, pattern)
+  -- Set default values if passed parameter is nil
+  mask_char = mask_char or "x"
+  expose_chars = tonumber(expose_chars) or 0
+  pattern = pattern or ""
+
+  local exposed, masked = "", ""
+ 
   if type(value) ~= "string" and type(value) ~= "number" then
     return value
   end
@@ -61,27 +70,25 @@ local function mask_value(value, mask_char, expose_chars, pattern)
   value = tostring(value)
   
   -- Validasi pola jika disediakan
-  if pattern and pattern ~= "" and not string.match(value, pattern) then
-    kong.log.debug("Value doesn't match pattern, skipping mask: ", value)
-    return value
-  end
+  -- if pattern and pattern ~= "" and not string.match(value, pattern) then
+  --   kong.log("Ini coba log:", pattern)
+  --   kong.log("Value doesn't match pattern, skipping mask: ", value)
+  --   return value
+  -- end
 
   -- Jika value berupa angka (hanya digit dengan spasi opsional), mask penuh tanpa expose
-  if string.match(value, "^%s*%d+%s*$") then
-    return string.rep(mask_char, #value)
-  end
+  -- if string.match(value, "^%s*%d+%s*$") then
+  --   return string.rep(mask_char, #value)
+  -- end
 
-  local length = #value
-  local expose_num = tonumber(expose_chars) or 0
-  local exposed, masked = "", ""
-
-  if expose_num > 0 and expose_num < length then
-    exposed = string.sub(value, 1, expose_num)
-    masked = string.rep(mask_char, length - expose_num)
+  if expose_chars > 0 and expose_chars < #value then
+    exposed = string.sub(value, 1, expose_chars)
+    masked = string.rep(mask_char, #value - expose_chars)
   else
-    masked = string.rep(mask_char, length)
+    masked = string.rep(mask_char, #value)
   end
 
+  -- Return finished
   return exposed .. masked
 end
 
@@ -118,54 +125,62 @@ function DataMaskingHandler:body_filter(conf)
     return
   end
 
-  -- Split konfigurasi
-  local field_names = split(conf.field_names, ",")
-  local mask_chars = split(conf.mask_chars, ",")
+  -- Create variables for configuration from user input
+  local Field_to_Mask = conf.Field_to_Mask
+  local Masking_Chars = conf.Masking_Chars
   local expose_chars = split(conf.expose_chars, ",")
   local patterns = split(conf.patterns or "", ";")
 
-  kong.log.debug("Masking configuration: ", cjson.encode({
-    field_names = field_names,
-    mask_chars = mask_chars,
+  -- Log for appliied configurations
+  kong.log.debug("Applied configuration: ", cjson.encode({
+    Field_to_Mask = Field_to_Mask,
+    Masking_Chars = Masking_Chars,
     expose_chars = expose_chars,
     patterns = patterns,
   }))
 
   local function process_object(obj)
-    for i, field_path in ipairs(field_names) do
-      field_path = field_path:match("^%s*(.-)%s*$") -- Hapus spasi di awal dan akhir
-      local original_value = get_nested_value(obj, field_path)
-      if original_value ~= nil then
-        local masked_value = nil
-        if type(original_value) == "table" then
-          -- Jika field adalah array, iterasi setiap elemen
-          masked_value = {}
-          for idx, element in ipairs(original_value) do
-            if type(element) == "string" or type(element) == "number" then
-              masked_value[idx] = mask_value(
-                element,
-                mask_chars[i] or "x",
-                expose_chars[i] or "0",
-                patterns[i] or ""
-              )
-            else
-              masked_value[idx] = element
-            end
-          end
-        else
-          masked_value = mask_value(
-            original_value,
-            mask_chars[i] or "x",
-            expose_chars[i] or "0",
-            patterns[i] or ""
-          )
-        end
-        set_nested_value(obj, field_path, masked_value)
-        kong.log.debug(string.format("Masked field: %s | Original: %s | Masked: %s",
-          field_path, cjson.encode(original_value), cjson.encode(masked_value)))
-      else
-        kong.log.debug("Field not found: ", field_path)
+    for i = 1, #Field_to_Mask do
+      -- Remove whitespaces
+      Field_to_Mask[i] = Field_to_Mask[i]:match("^%s*(.-)%s*$")
+
+      local original_value = get_nested_value(obj, Field_to_Mask[i])
+
+      if original_value == nil then
+        kong.log.debug("Field not found: ", Field_to_Mask[i])
+        return
       end
+
+      local masked_value = nil
+
+      -- Jika field adalah array, iterasi setiap elemen
+      if type(original_value) == "table" then
+        masked_value = {}
+        for idx, element in ipairs(original_value) do
+          if type(element) == "string" or type(element) == "number" then
+            masked_value[idx] = mask_value(
+              element,
+              Masking_Chars[i],
+              expose_chars[i],
+              patterns[i]
+            )
+          else
+            masked_value[idx] = element
+          end
+        end
+      else
+        masked_value = mask_value(
+          original_value,
+          Masking_Chars[i],
+          expose_chars[i],
+          patterns[i]
+        )
+      end
+
+      set_nested_value(obj, Field_to_Mask[i], masked_value)
+      
+      kong.log.debug(string.format("Masked field: %s | Original: %s | Masked: %s",
+      Field_to_Mask[i], cjson.encode(original_value), cjson.encode(masked_value)))
     end
   end
 

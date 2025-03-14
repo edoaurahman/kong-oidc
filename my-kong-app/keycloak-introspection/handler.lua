@@ -1,3 +1,33 @@
+--[[
+    KeycloakIntrospectionHandler - Kong plugin for Keycloak token introspection
+
+    This plugin validates OAuth2 access tokens by introspecting them against a Keycloak server.
+    It checks if the token is active and adds user information to request headers.
+
+    @module KeycloakIntrospectionHandler
+    @version 1.0.0
+    @priority 1200
+
+    Configuration parameters:
+    - keycloak_introspection_url: URL of the Keycloak introspection endpoint
+    - client_id: OAuth2 client ID for introspection
+    - client_secret: OAuth2 client secret for introspection
+
+    Functionality:
+    1. Extracts access token from Authorization header
+    2. Makes introspection request to Keycloak server
+    3. Validates token status and activity
+    4. Adds user information to request headers:
+       - X-User-Id: User's subject identifier
+       - X-Username: User's username
+
+    Error responses:
+    - 401 Unauthorized: Missing or invalid token
+    - 500 Internal Server Error: Introspection request failed
+
+    @usage
+    Configure the plugin in Kong with Keycloak credentials and introspection URL
+--]]
 -- keycloak-introspection/handler.lua
 
 local http = require("resty.http")
@@ -5,13 +35,12 @@ local cjson = require("cjson")
 
 local KeycloakIntrospectionHandler = {
   VERSION  = "1.0.0",
-  PRIORITY = 10,
+  PRIORITY = 1200,
 }
 
 function KeycloakIntrospectionHandler:access(config)
 
     -- Get the access token from the request headers
-    --local access_token = ngx.req.get_headers()["Authorization"]
     local access_token= ngx.var.http_authorization
 
     if not access_token then
