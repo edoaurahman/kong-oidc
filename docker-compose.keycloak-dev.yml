@@ -1,0 +1,52 @@
+networks:
+  kong-net:
+volumes:
+  kong-datastore:
+  keycloak-datastore:
+  kong_prefix_vol:
+  kong_tmp_vol:
+  redis-datastore:
+services:
+  # Keycloak services
+  keycloak-db:
+    # profiles:
+    #   - keycloak
+    image: postgres:14.15-alpine3.21
+    volumes:
+      - keycloak-datastore:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${KC_POSTGRES_DB}
+      POSTGRES_USER: ${KC_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${KC_POSTGRES_PASSWORD}
+    networks:
+      - kong-net
+
+  keycloak:
+    # profiles:
+    #   - keycloak
+    image: keycloak/keycloak:latest
+    command: start
+    environment:
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://${KC_DB_URL:-keycloak-db}/${KC_POSTGRES_DB}
+      KC_DB_USERNAME: ${KC_POSTGRES_USER}
+      KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
+      WEBHOOK_URL: https://webhook.site/fda046e6-52fa-4308-91a1-9f2b7f2603e3
+      # KC_LOG_LEVEL : DEBUG
+    ports:
+      - ${KC_PORT:-8080}:8080
+    restart: always
+    depends_on:
+      - keycloak-db
+    networks:
+      - kong-net
+    volumes:
+      - ./keycloak-providers:/opt/keycloak/providers/
