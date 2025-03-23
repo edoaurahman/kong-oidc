@@ -1,0 +1,13 @@
+{
+    "name": "mfa-telegram-bot",
+    "version": "1.0.0",
+    "description": "Telegram bot for MFA authentication",
+    "main": "bot.js",
+    "scripts": {
+      "start": "node bot.js"
+    },
+    "dependencies": {
+      "node-telegram-bot-api": "^0.65.1",
+      "dotenv": "^8.2.0"
+    }
+  }

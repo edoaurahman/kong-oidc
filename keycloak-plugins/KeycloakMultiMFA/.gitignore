@@ -1,0 +1,12 @@
+target/
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+.vscode/
+.m2/
+node_modules/
+telegram-bot/node_modules/
+telegram-bot/package-lock.json
+telegram-bot/.env

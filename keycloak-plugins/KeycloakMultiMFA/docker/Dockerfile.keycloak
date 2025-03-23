@@ -1,0 +1,44 @@
+# Build stage
+FROM maven:3.8.7-openjdk-18-slim AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy only the POM file first
+COPY pom.xml .
+
+# Copy source files
+COPY src ./src
+
+COPY target/keycloak-mfa-plugin-1.0-SNAPSHOT.jar /app/target/
+
+# # Build the application
+# RUN mvn clean package -DskipTests
+
+# Runtime stage
+FROM quay.io/keycloak/keycloak:26.1.2
+
+# Copy the built JAR file
+COPY --from=builder /app/target/keycloak-mfa-plugin-1.0-SNAPSHOT.jar /opt/keycloak/providers/
+
+RUN mkdir -p /opt/keycloak/themes/base/email/html \
+    && mkdir -p /opt/keycloak/themes/base/email/text
+    
+# Copy email templates
+COPY --from=builder /app/src/main/resources/theme/base/email/html/ /opt/keycloak/themes/base/email/html/
+COPY --from=builder /app/src/main/resources/theme/base/email/text/ /opt/keycloak/themes/base/email/text/
+
+WORKDIR /opt/keycloak
+
+# Build optimizations for Keycloak
+ENV KC_DB=postgres \
+    KC_HTTP_RELATIVE_PATH=/auth \
+    KC_HEALTH_ENABLED=true \
+    KC_METRICS_ENABLED=true \
+    TZ=Asia/Kolkata
+
+
+# Build the optimized server
+RUN /opt/keycloak/bin/kc.sh build
+
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start-dev"]
