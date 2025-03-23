@@ -1,0 +1,34 @@
+# Maven
+target/
+!target/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+.m2/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+docker/
+Dockerfile
+.dockerignore
+
+# Logs
+*.log
+
+# Tests
+src/test/
+
+# Documentation
+*.md
+LICENSE
+
+# Node.js
+node_modules/
+telegram-bot/node_modules/
+telegram-bot/package-lock.json
+telegram-bot/.env
