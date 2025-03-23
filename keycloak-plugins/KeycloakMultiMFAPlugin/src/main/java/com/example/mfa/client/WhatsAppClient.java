@@ -34,21 +34,22 @@ public class WhatsAppClient {
                     phoneNumber, message
             );
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Content-Type", "application/json")
-                    .header("X-WhatsApp-Token", config.getWhatsAppXAppToken())
-                    .header("X-WhatsApp-Key", config.getWhatsAppXAppKey())
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(request,
-                    HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                logger.error("Failed to send Telegram message. Status: " + response.statusCode());
-                throw new RuntimeException("Failed to send Telegram message");
-            }
+//            HttpRequest request = HttpRequest.newBuilder()
+//                    .uri(URI.create(url))
+//                    .header("Content-Type", "application/json")
+//                    .header("X-WhatsApp-Token", config.getWhatsAppXAppToken())
+//                    .header("X-WhatsApp-Key", config.getWhatsAppXAppKey())
+//                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+//                    .build();
+//
+//            HttpResponse<String> response = httpClient.send(request,
+//                    HttpResponse.BodyHandlers.ofString());
+//
+//            if (response.statusCode() != 200) {
+//                logger.error("Failed to send Telegram message. Status: " + response.statusCode());
+//                throw new RuntimeException("Failed to send Telegram message");
+//            }
+            logger.info("Json BODY:" + jsonBody);
 
             logger.info("WhatsApp message sent successfully to " + phoneNumber);
         } catch (Exception e) {

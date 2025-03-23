@@ -16,7 +16,7 @@ public class WhatsAppProvider extends AbstractMFAProvider {
     @Override
     protected void sendCode(AuthenticationFlowContext context, UserModel user, String code) throws Exception {
         String phoneNumber = user.getFirstAttribute("phoneNumber");
-        whatsAppService.sendVerificationCode(phoneNumber, code);
+        whatsAppService.sendVerificationCode(phoneNumber, code, context);
     }
 
     @Override

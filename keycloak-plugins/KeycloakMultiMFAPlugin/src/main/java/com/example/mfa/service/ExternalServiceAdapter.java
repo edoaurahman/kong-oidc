@@ -1,5 +1,7 @@
 package com.example.mfa.service;
 
+import org.keycloak.authentication.AuthenticationFlowContext;
+
 /**
  * Adapter Pattern: Interface for external service adapters
  */
@@ -14,7 +16,7 @@ public interface ExternalServiceAdapter {
      * Send a verification code to the recipient
      */
     void sendVerificationCode(String recipient, String code) throws Exception;
-    
+
     /**
      * Verify a code for a recipient (if applicable)
      */

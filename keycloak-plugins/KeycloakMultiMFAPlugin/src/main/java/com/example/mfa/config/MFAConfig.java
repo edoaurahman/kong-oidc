@@ -39,6 +39,7 @@ public class MFAConfig {
     public static final String WHATSAPP_ENDPOINT = "whatsappEndpoint";
     public static final String WHATSAPP_X_APP_KEY = "whatsappXAppKey";
     public static final String WHATSAPP_X_APP_TOKEN = "whatsappXAppToken";
+    public static final String WHATSAPP_MESSAGE_TEMPLATE = "whatsappMessageTemplate";
 
     private final Map<String, String> config;
 
@@ -170,6 +171,10 @@ public class MFAConfig {
 
     public String getWhatsAppEndpoint() {
         return getConfig(WHATSAPP_ENDPOINT);
+    }
+
+    public String getWhatsAppMessageTemplate() {
+        return getConfig(WHATSAPP_MESSAGE_TEMPLATE);
     }
 
     // General getters

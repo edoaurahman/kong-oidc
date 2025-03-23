@@ -1,7 +1,7 @@
 .PHONY: build-mfa
 build-mfa:
-	# Build the Keycloak KeycloakMultiMFA plugin
-	@cd ./keycloak-plugins/KeycloakMultiMFA && mvn clean package
+	# Build the Keycloak KeycloakMultiMFAPlugin plugin
+	@cd ./keycloak-plugins/KeycloakMultiMFAPlugin && mvn clean package
 	# Move the built plugin to the Keycloak distribution
-	@mv keycloak-plugins/KeycloakMultiMFA/target/keycloak-mfa-plugin-*.jar keycloak-providers/
-	@echo "KeycloakMultiMFA plugin built and moved to keycloak-providers/ directory."
+	@mv keycloak-plugins/KeycloakMultiMFAPlugin/target/keycloak-mfa-plugin-*.jar keycloak-providers/
+	@echo "KeycloakMultiMFAPlugin plugin built and moved to keycloak-providers/ directory."

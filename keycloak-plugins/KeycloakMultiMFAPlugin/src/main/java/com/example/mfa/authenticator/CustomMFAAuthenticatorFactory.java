@@ -119,6 +119,13 @@ public class CustomMFAAuthenticatorFactory implements AuthenticatorFactory, Conf
         whatsappXAppToken.setHelpText("Your WhatsApp X-App-Token");
         configProperties.add(whatsappXAppToken);
 
+        ProviderConfigProperty messageTemplate = new ProviderConfigProperty();
+        messageTemplate.setName(MFAConfig.WHATSAPP_MESSAGE_TEMPLATE);
+        messageTemplate.setLabel("WhatsApp Message Template");
+        messageTemplate.setType(ProviderConfigProperty.STRING_TYPE);
+        messageTemplate.setHelpText("Template for WhatsApp messages. Use {code} for OTP, {username} for username");
+        configProperties.add(messageTemplate);
+
 
         logger.info("Added " + configProperties.size() + " config properties");
     }
