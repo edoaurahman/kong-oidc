@@ -1,16 +1,18 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout displayMessage=!messagesPerField.existsError('code'); section>
     <#if section = "header">
-        ${msg("Enter Verification Code")}
+        ${msg("Masukkan Kode Verifikasi")}
     <#elseif section = "form">
         <form id="kc-otp-login-form" class="${properties.kcFormClass!}" action="${url.loginAction}" method="post">
             <div class="${properties.kcFormGroupClass!}">
                 <div class="${properties.kcLabelWrapperClass!}">
                     <label for="code" class="${properties.kcLabelClass!}">
                         <#if method?? && method == "totp">
-                            ${msg("Enter code from your authenticator app")}
+                            ${msg("Masukkan kode dari aplikasi autentikator Anda")}
+                        <#elseif method?? && method == "whatsapp">
+                            ${msg("Masukkan kode yang kami kirim ke WhatsApp Anda")}
                         <#else>
-                            ${msg("Enter the code we sent you")}
+                            ${msg("Masukkan kode yang telah kami kirimkan")}
                         </#if>
                     </label>
                 </div>
@@ -28,7 +30,7 @@
             <div class="${properties.kcFormGroupClass!}">
                 <div id="kc-form-buttons" class="${properties.kcFormButtonsClass!}">
                     <input class="${properties.kcButtonClass!} ${properties.kcButtonPrimaryClass!} ${properties.kcButtonBlockClass!} ${properties.kcButtonLargeClass!}"
-                           type="submit" value="${msg('Submit')}"/>
+                           type="submit" value="${msg('Verifikasi')}"/>
                 </div>
             </div>
         </form>

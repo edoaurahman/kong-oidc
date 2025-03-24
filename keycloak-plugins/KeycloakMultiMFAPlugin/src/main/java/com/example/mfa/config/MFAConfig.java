@@ -40,6 +40,13 @@ public class MFAConfig {
     public static final String WHATSAPP_X_APP_KEY = "whatsappXAppKey";
     public static final String WHATSAPP_X_APP_TOKEN = "whatsappXAppToken";
     public static final String WHATSAPP_MESSAGE_TEMPLATE = "whatsappMessageTemplate";
+    public static final String DEFAULT_WHATSAPP_MESSAGE_TEMPLATE =
+            "Hai {fullName}\n" +
+                    "Kode verifikasi anda adalah {code}\n" +
+                    "Berlaku selama 5 menit sampai dengan pukul {expirationTime} WIB {expirationDate}\n" +
+                    "Demi keamanan, mohon untuk tidak membagikan kode ini dengan siapapun.\n" +
+                    "Terima kasih,\n" +
+                    "Onekey-Petrokimia Gresik";
 
     private final Map<String, String> config;
 
@@ -174,7 +181,7 @@ public class MFAConfig {
     }
 
     public String getWhatsAppMessageTemplate() {
-        return getConfig(WHATSAPP_MESSAGE_TEMPLATE);
+        return getConfig(WHATSAPP_MESSAGE_TEMPLATE, DEFAULT_WHATSAPP_MESSAGE_TEMPLATE);
     }
 
     // General getters
@@ -232,6 +239,10 @@ public class MFAConfig {
 
         public Builder setOtpExpiration(int seconds) {
             return setConfig(OTP_EXPIRATION, String.valueOf(seconds));
+        }
+
+        public Builder setWhatsappMessageTemplate(String template) {
+            return setConfig(WHATSAPP_MESSAGE_TEMPLATE, template);
         }
 
         public MFAConfig build() {

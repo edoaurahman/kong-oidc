@@ -20,19 +20,19 @@ import java.util.List;
  * Registers authenticator with Keycloak and provides configuration properties
  */
 public class CustomMFAAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
-    
+
     private static final Logger logger = Logger.getLogger(CustomMFAAuthenticatorFactory.class);
     public static final String PROVIDER_ID = "custom-mfa-authenticator";
     private static final CustomMFAAuthenticator SINGLETON = new CustomMFAAuthenticator();
-    
+
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
-    
+
     static {
         // Register the logging event listener
         AuthEventManager.getInstance().addEventListener(new LoggingEventListener());
-        
+
         logger.info("Initializing CustomMFAAuthenticatorFactory configuration properties");
-        
+
         // Twilio Configuration - use string constants for key name consistency
         ProviderConfigProperty twilioAccountSid = new ProviderConfigProperty();
         twilioAccountSid.setName("twilioAccountSid");  // Must match key in service adapter
@@ -122,10 +122,17 @@ public class CustomMFAAuthenticatorFactory implements AuthenticatorFactory, Conf
         ProviderConfigProperty messageTemplate = new ProviderConfigProperty();
         messageTemplate.setName(MFAConfig.WHATSAPP_MESSAGE_TEMPLATE);
         messageTemplate.setLabel("WhatsApp Message Template");
-        messageTemplate.setType(ProviderConfigProperty.STRING_TYPE);
-        messageTemplate.setHelpText("Template for WhatsApp messages. Use {code} for OTP, {username} for username");
+        messageTemplate.setType(ProviderConfigProperty.TEXT_TYPE);
+        messageTemplate.setDefaultValue(
+                "Hai {fullName}\n\n" +
+                        "Kode verifikasi anda adalah {code}\n\n" +
+                        "Berlaku selama 5 menit sampai dengan pukul {expirationTime} WIB {expirationDate}\n" +
+                        "Demi keamanan, mohon untuk tidak membagikan kode ini dengan siapapun.\n\n" +
+                        "Terima kasih,\n" +
+                        "Onekey-Petrokimia Gresik"
+        );
+        messageTemplate.setHelpText("Template for WhatsApp messages. Use {code} for OTP, {fullName} for full name, {expirationTime} for expiry time, {expirationDate} for expiry date.");
         configProperties.add(messageTemplate);
-
 
         logger.info("Added " + configProperties.size() + " config properties");
     }
@@ -189,7 +196,7 @@ public class CustomMFAAuthenticatorFactory implements AuthenticatorFactory, Conf
 
     @Override
     public String getHelpText() {
-        return "Provides MFA via TOTP, SMS, Telegram, or Email";
+        return "Provides MFA via Whatsapp, TOTP, SMS, Telegram, or Email";
     }
 
     @Override

@@ -15,7 +15,7 @@ public class WhatsAppProvider extends AbstractMFAProvider {
 
     @Override
     protected void sendCode(AuthenticationFlowContext context, UserModel user, String code) throws Exception {
-        String phoneNumber = user.getFirstAttribute("phoneNumber");
+        String phoneNumber = user.getFirstAttribute("PhoneNumber");
         whatsAppService.sendVerificationCode(phoneNumber, code, context);
     }
 
@@ -31,12 +31,17 @@ public class WhatsAppProvider extends AbstractMFAProvider {
 
     @Override
     public boolean isConfiguredFor(UserModel user) {
-        String phoneNumber = user.getFirstAttribute("phoneNumber");
+        String phoneNumber = user.getFirstAttribute("PhoneNumber");
         return phoneNumber != null && !phoneNumber.isEmpty();
     }
 
     @Override
     public boolean configure(AuthenticationFlowContext context, UserModel user, String configValue) {
+        if (configValue != null && !configValue.isEmpty()) {
+            // Store PhoneNumber in user attributes
+            user.setSingleAttribute("PhoneNumber", configValue);
+            return true;
+        }
         return false;
     }
 }

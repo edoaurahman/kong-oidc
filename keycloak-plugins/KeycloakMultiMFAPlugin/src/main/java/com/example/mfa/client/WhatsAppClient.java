@@ -16,22 +16,23 @@ public class WhatsAppClient {
 
     public WhatsAppClient(MFAConfig config) {
         this.config = config;
-
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
     }
 
-
     public void sendMessage(String phoneNumber, String message) throws Exception {
-        // Send message using WhatsApp API
         try {
-            String url = String.format(config.getWhatsAppEndpoint());
-            logger.info("Sending message to " + phoneNumber + " via WhatsApp API: " + url);
+            String url = config.getWhatsAppEndpoint();
+            logger.info("Sending message to " + phoneNumber + " via WhatsApp API");
+
+            // Escape special characters for JSON
+            String escapedMessage = message.replace("\"", "\\\"")
+                    .replace("\n", "\\n");
 
             String jsonBody = String.format(
                     "{\"schema\": \"NUMBER\", \"receiver\": \"%s\",\"message\": {\"text\": \"%s\"}}",
-                    phoneNumber, message
+                    phoneNumber, escapedMessage
             );
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -46,14 +47,14 @@ public class WhatsAppClient {
                     HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                logger.error("Failed to send Telegram message. Status: " + response.statusCode());
-                throw new RuntimeException("Failed to send Telegram message");
+                logger.error("Failed to send WhatsApp message. Status: " + response.statusCode());
+                throw new RuntimeException("Failed to send WhatsApp message: " + response.body());
             }
-            logger.info("Json BODY:" + jsonBody);
+            logger.debug("Json body: " + jsonBody);
 
-            logger.info("WhatsApp message sent successfully to " + phoneNumber);
+            logger.debug("WhatsApp message sent successfully to " + phoneNumber);
         } catch (Exception e) {
-            logger.error("Failed to send message to " + phoneNumber, e);
+            logger.error("Failed to send WhatsApp message to " + phoneNumber, e);
             throw e;
         }
     }
