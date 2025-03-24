@@ -37,8 +37,8 @@ public class WhatsAppClient {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
-                    .header("X-WhatsApp-Token", config.getWhatsAppXAppToken())
-                    .header("X-WhatsApp-Key", config.getWhatsAppXAppKey())
+                    .header("X-APP-TOKEN", config.getWhatsAppXAppToken())
+                    .header("X-APP-KEY", config.getWhatsAppXAppKey())
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
 

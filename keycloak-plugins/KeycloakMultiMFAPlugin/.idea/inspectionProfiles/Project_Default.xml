@@ -6,6 +6,8 @@
         <set>
           <option value="X-WhatsApp-Token" />
           <option value="X-WhatsApp-Key" />
+          <option value="X-APP-TOKEN" />
+          <option value="X-APP-KEY" />
         </set>
       </option>
     </inspection_tool>
