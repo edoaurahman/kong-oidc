@@ -231,7 +231,7 @@ public class CustomMFAAuthenticator implements Authenticator {
             switch (method) {
                 case "sms":
                 case "whatsapp":
-                    configValue = formData.getFirst("phoneNumber");
+                    configValue = formData.getFirst("PhoneNumber");
                     break;
                 case "telegram":
                     configValue = formData.getFirst("telegramId");
