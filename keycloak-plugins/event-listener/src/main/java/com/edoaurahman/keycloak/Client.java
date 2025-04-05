@@ -17,17 +17,18 @@ public class Client {
     public static void postService(String data) throws IOException {
         try {
             final String urlString = System.getenv(WEBHOOK_URL);
-            log.debugf("WEBHOOK_URL: %s", urlString);
+            log.infof("WEBHOOK_URL: %s", urlString);
 
             if (urlString == null || urlString.isEmpty()) {
                 throw new IllegalArgumentException("Environment variable WEBHOOK_URL is not set or is empty.");
             }
 
             URL url = URI.create(urlString).toURL();
+            log.infof("URL: %s", url);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
             conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; utf-8");
+            conn.setRequestProperty("Content-Type", "application/json");
 
             OutputStream os = conn.getOutputStream();
             os.write(data.getBytes());
