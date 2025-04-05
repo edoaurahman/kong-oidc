@@ -32,6 +32,7 @@ services:
     environment:
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_HOSTNAME_PORT: 8080
+      KC_PROXY_HEADERS: ${KC_PROXY_HEADERS:-xforwarded}
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
       KC_HTTP_ENABLED: ${KC_HTTP_ENABLED:-false}
       KC_HOSTNAME_STRICT_HTTPS: false
