@@ -43,6 +43,8 @@ services:
       KC_DB_USERNAME: ${KC_POSTGRES_USER}
       KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
       WEBHOOK_URL: https://webhook.site/fda046e6-52fa-4308-91a1-9f2b7f2603e3
+      KC_HTTPS_CERTIFICATE_FILE: ${KC_HTTPS_CERTIFICATE_FILE}
+      KC_HTTPS_CERTIFICATE_KEY_FILE: ${KC_HTTPS_CERTIFICATE_KEY_FILE}
       # KC_LOG_LEVEL : DEBUG
     ports:
       - ${KC_PORT:-8080}:8080
@@ -54,3 +56,4 @@ services:
       - proxy
     volumes:
       - ./keycloak-providers:/opt/keycloak/providers/
+      - ${KC_CERT_DIR:-./certs}:/certs
