@@ -44,13 +44,14 @@ services:
       KC_DB_USERNAME: ${KC_POSTGRES_USER}
       KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
       WEBHOOK_URL: ${WEBHOOK_URL}
+      LOG_ACTIVITY_KEY: ${LOG_ACTIVITY_KEY}
       KC_HTTPS_CERTIFICATE_FILE: ${KC_HTTPS_CERTIFICATE_FILE}
       KC_HTTPS_CERTIFICATE_KEY_FILE: ${KC_HTTPS_CERTIFICATE_KEY_FILE}
       PROXY_ADDRESS_FORWARDING: true
       # KC_LOG_LEVEL : DEBUG
     ports:
       - ${KC_PORT:-8080}:8080
-    restart: always
+    # restart: always
     depends_on:
       - keycloak-db
     networks:

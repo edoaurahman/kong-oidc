@@ -12,7 +12,12 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RealmProvider;
 import org.keycloak.models.UserModel;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 public class CustomEventListenerProvider implements EventListenerProvider {
 
@@ -35,24 +40,16 @@ public class CustomEventListenerProvider implements EventListenerProvider {
         log.debugf("Realm: %s", realm.getName());
         log.debugf("Client: %s", event.getClientId());
 
-        if (EventType.REGISTER.equals(event.getType())) { // Log Register Event
-            log.info("Handling REGISTER event");
-
-            handlingEvent(event, realm);
-        } else if (EventType.LOGIN.equals(event.getType())) { // Log Login Event
-            log.info("Handling LOGIN event");
-
-            handlingEvent(event, realm);
-        }
+        handlingEvent(event, realm);
     }
 
     private void handlingEvent(Event event, RealmModel realm) {
-        event.getDetails().forEach((key, value) -> log.debugf("%s : %s", key, value));
-
+//        event.getDetails().forEach((key, value) -> log.infof("%s : %s", key, value));
+        log.infof("Handling event: %s", event.getType().toString());
         UserModel user = this.session.users().getUserById(realm, event.getUserId());
         if (user != null) {
             log.infof("User found: %s", user.getUsername());
-            sendUserData(user, realm.getName(), event.getClientId(), event.getIpAddress());
+            sendUserData(user, realm.getName(), event.getClientId(), event.getIpAddress(), event.getType().toString());
         } else {
             log.warnf("User not found for ID: %s", event.getUserId());
         }
@@ -70,32 +67,16 @@ public class CustomEventListenerProvider implements EventListenerProvider {
         log.debugf("Realm: %s", realm.getName());
         log.debugf("Client: %s", adminEvent.getAuthDetails().getClientId());
 
-        if (ResourceType.USER.equals(adminEvent.getResourceType())
-                && OperationType.CREATE.equals(adminEvent.getOperationType())) {
-            log.info("Handling USER CREATE admin event");
-
-            UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
-            if (user != null) {
-                log.infof("User created: %s", user.getUsername());
-                sendUserData(user, realm.getName(), adminEvent.getAuthDetails().getClientId(), adminEvent.getAuthDetails().getIpAddress());
-            } else {
-                log.warnf("User not found for path: %s", adminEvent.getResourcePath());
-            }
-        } else if (ResourceType.USER.equals(adminEvent.getResourceType())
-                && OperationType.UPDATE.equals(adminEvent.getOperationType())) {
-            log.info("Handling USER UPDATE admin event");
-
-            UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
-            if (user != null) {
-                log.infof("User updated: %s", user.getUsername());
-                sendUserData(user, realm.getName(), adminEvent.getAuthDetails().getClientId(), adminEvent.getAuthDetails().getIpAddress());
-            } else {
-                log.warnf("User not found for path: %s", adminEvent.getResourcePath());
-            }
+        UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
+        if (user != null) {
+            log.infof("User created: %s", user.getUsername());
+            sendUserData(user, realm.getName(), adminEvent.getAuthDetails().getClientId(), adminEvent.getAuthDetails().getIpAddress(), adminEvent.getOperationType().toString());
+        } else {
+            log.warnf("User not found for path: %s", adminEvent.getResourcePath());
         }
     }
 
-    private void sendUserData(UserModel user, String realmName, String clientId, String ipAddress) {
+    private void sendUserData(UserModel user, String realmName, String clientId, String ipAddress, String event) {
         String data = """
                 {
                     "id": "%s",
@@ -104,12 +85,31 @@ public class CustomEventListenerProvider implements EventListenerProvider {
                     "firstName": "%s",
                     "lastName": "%s",
                     "realm": "%s",
+                    "event: "%s",
                     "client": "%s",
                     "ipAddress": "%s",
                 }
-                """.formatted(user.getId(), user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), realmName, clientId, ipAddress);
+                """.formatted(user.getId(), user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), realmName, event, clientId, ipAddress);
+
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("id", user.getId());
+        params.put("email", user.getEmail());
+        params.put("userName", user.getUsername());
+        params.put("firstName", user.getFirstName());
+        params.put("lastName", user.getLastName());
+        params.put("realm", realmName);
+        params.put("event", event);
+        params.put("client", clientId);
+        params.put("ipAddress", ipAddress);
+
+        String queryString = params.entrySet().stream()
+                .filter(entry -> entry.getValue() != null)  // Filter out null values
+                .map(entry -> entry.getKey() + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
+                .collect(Collectors.joining("&"));
+
+        log.info(queryString);
         try {
-            Client.postService(data);
+            Client.postService(queryString);
             log.debug("A new user has been created and posted to API");
         } catch (Exception e) {
             log.errorf("Failed to call API: %s", e);
