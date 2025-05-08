@@ -3,10 +3,7 @@ package com.edoaurahman.keycloak;
 import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
-import org.keycloak.events.EventType;
 import org.keycloak.events.admin.AdminEvent;
-import org.keycloak.events.admin.OperationType;
-import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RealmProvider;
@@ -40,7 +37,9 @@ public class CustomEventListenerProvider implements EventListenerProvider {
         log.debugf("Realm: %s", realm.getName());
         log.debugf("Client: %s", event.getClientId());
 
-        handlingEvent(event, realm);
+        if (isEventType(event)) {
+            handlingEvent(event, realm);
+        }
     }
 
     private void handlingEvent(Event event, RealmModel realm) {
@@ -68,29 +67,13 @@ public class CustomEventListenerProvider implements EventListenerProvider {
         log.debugf("Client: %s", adminEvent.getAuthDetails().getClientId());
 
         UserModel user = this.session.users().getUserById(realm, adminEvent.getResourcePath().substring(6));
-        if (user != null) {
-            log.infof("User created: %s", user.getUsername());
+        if (isAdminEventType(adminEvent)) {
+            log.infof("Handling event: %s", user.getUsername());
             sendUserData(user, realm.getName(), adminEvent.getAuthDetails().getClientId(), adminEvent.getAuthDetails().getIpAddress(), adminEvent.getOperationType().toString());
-        } else {
-            log.warnf("User not found for path: %s", adminEvent.getResourcePath());
         }
     }
 
     private void sendUserData(UserModel user, String realmName, String clientId, String ipAddress, String event) {
-        String data = """
-                {
-                    "id": "%s",
-                    "email": "%s",
-                    "userName": "%s",
-                    "firstName": "%s",
-                    "lastName": "%s",
-                    "realm": "%s",
-                    "event: "%s",
-                    "client": "%s",
-                    "ipAddress": "%s",
-                }
-                """.formatted(user.getId(), user.getEmail(), user.getUsername(), user.getFirstName(), user.getLastName(), realmName, event, clientId, ipAddress);
-
         Map<String, String> params = new LinkedHashMap<>();
         params.put("id", user.getId());
         params.put("email", user.getEmail());
@@ -173,5 +156,29 @@ public class CustomEventListenerProvider implements EventListenerProvider {
         }
 
         return joiner.toString();
+    }
+
+    private Boolean isEventType(Event event) {
+        String eventType = "LOGIN, LOGOUT, RESET_PASSWORD, UPDATE_EMAIL, UPDATE_PROFILE, SEND_RESET_PASSWORD, VERIFY_EMAIL";
+
+        if (eventType.contains(event.getType().toString())) {
+            log.infof("Event type: %s", event.getType());
+            return true;
+        } else {
+            log.infof("Event type not found: %s", event.getType());
+            return false;
+        }
+    }
+
+    private Boolean isAdminEventType(AdminEvent event) {
+        String eventType = "CLIENT_DELETE, CLIENT_INFO, CLIENT_LOGIN, CLIENT_REGISTER, CLIENT_UPDATE";
+
+        if (eventType.contains(event.getResourceType().toString())) {
+            log.infof("Event type: %s", event.getResourceType());
+            return true;
+        } else {
+            log.infof("Event type not found: %s", event.getResourceType());
+            return false;
+        }
     }
 }

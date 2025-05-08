@@ -28,7 +28,7 @@ services:
     # profiles:
     #   - keycloak
     image: keycloak/keycloak:latest
-    command: start
+    command: start-dev
     environment:
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_HOSTNAME_PORT: 8080

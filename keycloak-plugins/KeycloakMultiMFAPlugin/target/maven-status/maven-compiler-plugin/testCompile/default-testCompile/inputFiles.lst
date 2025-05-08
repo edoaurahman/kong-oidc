@@ -1,2 +1,2 @@
-D:\Otodidak\kong\kong-oidc\keycloak-plugins\KeycloakMultiMFAPlugin\src\test\java\com\example\mfa\test\CustomMFAAuthenticatorTest.java
-D:\Otodidak\kong\kong-oidc\keycloak-plugins\KeycloakMultiMFAPlugin\src\test\java\com\example\mfa\test\OTPServiceTest.java
+/Users/edoaurahman/development/docker/kong-oidc/keycloak-plugins/KeycloakMultiMFAPlugin/src/test/java/com/example/mfa/test/CustomMFAAuthenticatorTest.java
+/Users/edoaurahman/development/docker/kong-oidc/keycloak-plugins/KeycloakMultiMFAPlugin/src/test/java/com/example/mfa/test/OTPServiceTest.java
